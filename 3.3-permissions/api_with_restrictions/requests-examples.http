@@ -1,42 +1,74 @@
-# примеры API-запросов
+@baseUrl = http://127.0.0.1:8000/api
+@ownerToken = REPLACE_WITH_OWNER_TOKEN
+@otherToken = REPLACE_WITH_OTHER_USER_TOKEN
+@advertisementId = 1
 
-@baseUrl = https://localhost:8000/api
-
-# получение объявлений
+### Просмотр без авторизации
 GET {{baseUrl}}/advertisements/
-Content-Type: application/json
 
-###
+### Просмотр одного объявления
+GET {{baseUrl}}/advertisements/{{advertisementId}}/
 
-# создание объявления
+### Создание: ожидается 201, если лимит не достигнут
 POST {{baseUrl}}/advertisements/
+Authorization: Token {{ownerToken}}
 Content-Type: application/json
-Authorization: Token 902ef055a9ac93f18327f1f9c45ab059f1a62c7d
 
 {
-  "title": "Шкаф IKEA",
-  "description": "Срочно"
+  "title": "Продам велосипед",
+  "description": "Хорошее состояние",
+  "status": "OPEN"
 }
 
-###
-
-# попытка поменять объявление
-PATCH {{baseUrl}}/advertisements/1/
+### Создание без авторизации: ожидается 401
+POST {{baseUrl}}/advertisements/
 Content-Type: application/json
-Authorization: Token 902ef055a9ac93f18327f1f9c45ab059f1a62c7d
+
+{
+  "title": "Без авторизации",
+  "status": "OPEN"
+}
+
+### Изменение автором: ожидается 200
+PATCH {{baseUrl}}/advertisements/{{advertisementId}}/
+Authorization: Token {{ownerToken}}
+Content-Type: application/json
+
+{
+  "description": "Обновлённое описание"
+}
+
+### Изменение чужого объявления: ожидается 403
+PATCH {{baseUrl}}/advertisements/{{advertisementId}}/
+Authorization: Token {{otherToken}}
+Content-Type: application/json
+
+{
+  "title": "Попытка изменить чужое"
+}
+
+### Фильтр по статусу
+GET {{baseUrl}}/advertisements/?status=OPEN
+
+### Фильтр по автору
+GET {{baseUrl}}/advertisements/?creator=1
+
+### Фильтр по дате: адаптируйте даты к своим данным
+GET {{baseUrl}}/advertisements/?created_at_after=2026-10-01&created_at_before=2026-10-27
+
+### Закрытие своего объявления
+PATCH {{baseUrl}}/advertisements/{{advertisementId}}/
+Authorization: Token {{ownerToken}}
+Content-Type: application/json
 
 {
   "status": "CLOSED"
 }
 
-###
+### Удаление чужого объявления: ожидается 403
+DELETE {{baseUrl}}/advertisements/{{advertisementId}}/
+Authorization: Token {{otherToken}}
 
-# фильтрация по создателю
-GET {{baseUrl}}/advertisements/?creator=3
-Content-Type: application/json
-
-###
-
-# фильтрация по дате
-GET {{baseUrl}}/advertisements/?created_at_before=2020-10-01
-Content-Type: application/json
+### Удаление своего: ожидается 204, выполнять последним
+DELETE {{baseUrl}}/advertisements/{{advertisementId}}/
+Authorization: Token {{ownerToken}}

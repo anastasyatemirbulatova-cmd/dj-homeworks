@@ -1,15 +1,38 @@
-from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
+
+from advertisements.filters import AdvertisementFilter
+from advertisements.models import Advertisement
+from advertisements.permissions import IsAdvertisementOwner
+from advertisements.serializers import AdvertisementSerializer
 
 
 class AdvertisementViewSet(ModelViewSet):
-    """ViewSet для объявлений."""
+    """Создание, просмотр, изменение и удаление объявлений."""
 
-    # TODO: настройте ViewSet, укажите атрибуты для кверисета,
-    #   сериализаторов и фильтров
+    queryset = (
+        Advertisement.objects
+        .select_related("creator")
+        .order_by("-created_at")
+    )
+    serializer_class = AdvertisementSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = AdvertisementFilter
 
     def get_permissions(self):
-        """Получение прав для действий."""
-        if self.action in ["create", "update", "partial_update"]:
+        """Возвращает права доступа для текущего действия."""
+        if self.action == "create":
             return [IsAuthenticated()]
-        return []
+
+        if self.action in (
+            "update",
+            "partial_update",
+            "destroy",
+        ):
+            return [
+                IsAuthenticated(),
+                IsAdvertisementOwner(),
+            ]
+
+        return [AllowAny()]
